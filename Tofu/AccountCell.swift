@@ -58,6 +58,7 @@ private func imageForAccount(_ account: Account) -> UIImage {
     case .some("Fastmail"): return UIImage(named: "FastMail")!
     case .some("Firefox"): return UIImage(named: "Firefox")!
     case .some("gandi.net"): return UIImage(named: "Gandi")!
+    case .some("Gitea"): return UIImage(named: "Gitea")!
     case .some("GitHub"): return UIImage(named: "GitHub")!
     case .some("gitlab.com"): return UIImage(named: "GitLab")!
     case .some("Google"): return UIImage(named: "Google")!
@@ -80,7 +81,7 @@ private func imageForAccount(_ account: Account) -> UIImage {
     case .some("Microsoft"): return UIImage(named: "Microsoft")!
     case .some("Name.com"): return UIImage(named: "Name.com")!
     case .some("Nextcloud"): return UIImage(named: "Nextcloud")!
-    case .some("NiceHash - New platform"): return UIImage(named: "NiceHash")!
+    case .some("NiceHash"), .some("NiceHash - New platform"): return UIImage(named: "NiceHash")!
     case .some("NordPass"): return UIImage(named: "NordPass")!
     case .some("ownCloud"): return UIImage(named: "ownCloud")!
     case .some("Paladin Extensions"): return UIImage(named: "PaladinExtensions")!

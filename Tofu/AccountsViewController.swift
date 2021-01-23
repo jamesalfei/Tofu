@@ -2,12 +2,11 @@ import UIKit
 
 private let accountOrderKey = "persistentRefs"
 
-class AccountsViewController: UITableViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class AccountsViewController: UITableViewController {
     @IBOutlet weak var emptyView: UIView!
 
     private let keychain = Keychain()
     private var accounts = [Account]()
-    private let qrImporter = UIImagePickerController()
 
     private lazy var searchController = makeSearchController()
     private lazy var addAccountAlertController = makeAddAccountAlertController()
@@ -36,8 +35,6 @@ class AccountsViewController: UITableViewController, UIImagePickerControllerDele
             selector: #selector(deselectSelectedTableViewRow),
             name: UIMenuController.willHideMenuNotification,
             object: nil)
-        
-        qrImporter.delegate = self
     }
 
     @objc func deselectSelectedTableViewRow() {
@@ -86,11 +83,14 @@ class AccountsViewController: UITableViewController, UIImagePickerControllerDele
         }
         
         let importQRCode = UIAlertAction(title: "Import QR Image", style: .default) { [unowned self] _ in
-            self.qrImporter.allowsEditing = false
-            self.qrImporter.sourceType = .photoLibrary
-            
-            if UIImagePickerController.isSourceTypeAvailable(UIImagePickerController.SourceType.photoLibrary) {
-                self.present(self.qrImporter, animated: true, completion: nil)
+            if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+                let imagePickerController = UIImagePickerController()
+
+                imagePickerController.delegate = self
+                imagePickerController.allowsEditing = false
+                imagePickerController.sourceType = .photoLibrary
+
+                self.present(imagePickerController, animated: true, completion: nil)
             } else {
                 let importAlert = UIAlertController(title: "Error",
                                                     message: "Unable to access photo library.",
@@ -113,7 +113,7 @@ class AccountsViewController: UITableViewController, UIImagePickerControllerDele
 
         return alertController
     }
-    
+
     private func persistAccountOrder() {
         let sortedPersistentRefs = accounts.map { $0.persistentRef! }
         UserDefaults.standard.set(sortedPersistentRefs, forKey: accountOrderKey)
@@ -130,32 +130,6 @@ class AccountsViewController: UITableViewController, UIImagePickerControllerDele
             tableView.separatorStyle = .singleLine
             navigationItem.leftBarButtonItem = editButtonItem
         }
-    }
-    
-    // MARK: UIImagePickerControlDelegate
-    
-    func imagePickerController(_ picker: UIImagePickerController,
-                               didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        dismiss(animated: true, completion: nil)
-        
-        guard let selectedQRCode = info[UIImagePickerController.InfoKey.originalImage] as? UIImage,
-            let detector = CIDetector(ofType: CIDetectorTypeQRCode,
-                                      context: nil,
-                                      options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]),
-            let ciImage = CIImage(image: selectedQRCode),
-            let features = detector.features(in: ciImage) as? [CIQRCodeFeature],
-            let messageString = features.first?.messageString,
-            let qrCodeURL = URL(string: messageString),
-            let account = Account(url: qrCodeURL) else {
-                let noQRAlert = UIAlertController(title: "Error",
-                                                  message: "Failed to detect QR code in the provided image.",
-                                                  preferredStyle: .alert)
-                noQRAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                self.present(noQRAlert, animated: true, completion: nil)
-                return
-        }
-
-        self.createAccount(account)
     }
 
     // MARK: UITableViewDataSource
@@ -291,6 +265,32 @@ extension AccountsViewController: UISearchResultsUpdating {
             return $0.description.range(of: string, options: .caseInsensitive, range: nil,
                                         locale: nil) != nil
         }
+    }
+}
+
+extension AccountsViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    func imagePickerController(_ picker: UIImagePickerController,
+                               didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        dismiss(animated: true, completion: nil)
+
+        guard let selectedQRCode = info[UIImagePickerController.InfoKey.originalImage] as? UIImage,
+            let detector = CIDetector(ofType: CIDetectorTypeQRCode,
+                                      context: nil,
+                                      options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]),
+            let ciImage = CIImage(image: selectedQRCode),
+            let features = detector.features(in: ciImage) as? [CIQRCodeFeature],
+            let messageString = features.first?.messageString,
+            let qrCodeURL = URL(string: messageString),
+            let account = Account(url: qrCodeURL) else {
+                let noQRAlert = UIAlertController(title: "Error",
+                                                  message: "Failed to detect QR code in the provided image.",
+                                                  preferredStyle: .alert)
+                noQRAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                self.present(noQRAlert, animated: true, completion: nil)
+                return
+        }
+
+        self.createAccount(account)
     }
 }
 
