@@ -92,11 +92,8 @@ class AccountsViewController: UITableViewController {
 
                 self.present(imagePickerController, animated: true, completion: nil)
             } else {
-                let importAlert = UIAlertController(title: "Error",
-                                                    message: "Unable to access photo library.",
-                                                    preferredStyle: .alert)
-                importAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                self.present(importAlert, animated: true, completion: nil)
+                presentErrorAlert(title: "Photo Library Empty",
+                                  message: "The photo library is empty and there are no images to import.")
             }
         }
 
@@ -230,8 +227,7 @@ class AccountsViewController: UITableViewController {
                 if !(cell.isFirstResponder && menuController.isMenuVisible) {
                     cell.becomeFirstResponder()
 
-                    menuController.setTargetRect(cell.frame, in: cellSuperview)
-                    menuController.setMenuVisible(true, animated: true)
+                    menuController.showMenu(from: cellSuperview, rect: cell.frame)
                 }
             }
         }
@@ -274,20 +270,24 @@ extension AccountsViewController: UIImagePickerControllerDelegate, UINavigationC
         dismiss(animated: true, completion: nil)
 
         guard let selectedQRCode = info[UIImagePickerController.InfoKey.originalImage] as? UIImage,
-            let detector = CIDetector(ofType: CIDetectorTypeQRCode,
-                                      context: nil,
-                                      options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]),
-            let ciImage = CIImage(image: selectedQRCode),
-            let features = detector.features(in: ciImage) as? [CIQRCodeFeature],
-            let messageString = features.first?.messageString,
-            let qrCodeURL = URL(string: messageString),
-            let account = Account(url: qrCodeURL) else {
-                let noQRAlert = UIAlertController(title: "Error",
-                                                  message: "Failed to detect QR code in the provided image.",
-                                                  preferredStyle: .alert)
-                noQRAlert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                self.present(noQRAlert, animated: true, completion: nil)
-                return
+              let detector = CIDetector(ofType: CIDetectorTypeQRCode,
+                                        context: nil,
+                                        options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]),
+              let ciImage = CIImage(image: selectedQRCode),
+              let features = detector.features(in: ciImage) as? [CIQRCodeFeature],
+              let messageString = features.first?.messageString else {
+
+            presentErrorAlert(title: "Could Not Detect QR Code",
+                              message: "No QR code was detected in the provided image. Please try importing a different image.")
+            return
+        }
+
+        guard let qrCodeURL = URL(string: messageString),
+              let account = Account(url: qrCodeURL) else {
+
+            presentErrorAlert(title: "Invalid QR Code",
+                              message: "The QR code detected in the provided image is invalid. Please try a different image.")
+            return
         }
 
         self.createAccount(account)

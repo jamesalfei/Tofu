@@ -36,6 +36,7 @@ class Account {
                 }
             case "digits":
                 guard let string = queryItem.value, let digits = Int(string) else { break }
+                if digits < 6 || digits > 9 { return nil }
                 password.digits = digits
             case "issuer": issuer = queryItem.value
             case "counter":
@@ -43,6 +44,7 @@ class Account {
                 password.counter = counter
             case "period":
                 guard let string = queryItem.value, let period = Int(string) else { break }
+                if period < 1 { return nil }
                 password.period = period
             default: break
             }
